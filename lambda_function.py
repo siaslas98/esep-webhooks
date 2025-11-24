@@ -9,7 +9,14 @@ def lambda_handler(event, context):
         try:
             event = json.loads(event["body"])
         except:
-            pass
+            pass   
+    
+    # Only react when an issue is created (opened)
+    if event.get("action") != "opened":
+        return {
+        "statusCode": 200,
+        "body": json.dumps({"status": "ignored"})
+    }
 
     issue_url = None
 
