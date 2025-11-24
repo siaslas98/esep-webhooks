@@ -3,22 +3,31 @@ import os
 import urllib.request 
 
 def lambda_handler(event, context):
-    # event is already a Python dict from API Gateway
+
+    # Parse GitHub webhook if wrapped by API Gateway
+    if "body" in event and isinstance(event["body"], str):
+        try:
+            event = json.loads(event["body"])
+        except:
+            pass
+
     issue_url = None
 
     if "issue" in event and "html_url" in event["issue"]:
         issue_url = event["issue"]["html_url"]
     
     if not issue_url:
-        return {"status": "no issue url found", "event": event}
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"status": "no issue url found"})
+        }
     
     payload = {
         "text": f"Issue Created: {issue_url}"
     }
 
-    data = json.dumps(payload).encode("utf-8")
-    
     slack_url = os.environ.get("SLACK_URL")
+    data = json.dumps(payload).encode("utf-8")
 
     req = urllib.request.Request(
         slack_url,
@@ -30,6 +39,9 @@ def lambda_handler(event, context):
     resp_body = resp.read().decode("utf-8")
     
     return {
-        'status': "ok",
-        'slack_response': resp_body
+        "statusCode": 200,
+        "body": json.dumps({
+            "status": "ok",
+            "slack_response": resp_body
+        })
     }
